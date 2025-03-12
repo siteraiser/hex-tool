@@ -40,24 +40,52 @@ const hexStakes = document.querySelector('.hex_stakes');
 const stakes_list = document.querySelector('#stakes_data');
 const messages = document.querySelector('.messages');
 
-loadStakesListButton.addEventListener('click', () => {	
+function latePenalty(endday,today){
+	if(today - endday >= 700){
+		return 100;
+	}else if(today - endday <= 14){
+		return 0;
+	}else if(today - endday + 14 < 700){
+		return (((today - endday + 14) / 700))*100;
+	}
+}
+
+
+
+loadStakesListButton.addEventListener('click', async () => {	
+
+	let today = await getCurrentDay();	
+	if(!today){return false;}
+	
 	let stakeJSON = stakes_list.value;
 	let stakeData = JSON.parse(stakeJSON);
 	let stakeStarts = stakeData.data.stakeStarts;
 	let stakeEnds = stakeData.data.stakeEnds;
 
 	
-	let tableHTML = "<table><tr><th>Index</th><th>stakeId</th><th>endDay</th><th>tshares</th><th>action</th></tr>";
+	let tableHTML = "<table><tr><th>Index</th><th>stakeId</th><th>endDay</th><th>tshares</th><th>late penalty</th><th>action</th></tr>";
 	for (const stake in stakeStarts){
 		let stakeindex = stake;
 		let stakeid = stakeStarts[stake].stakeId;
 		let endday = stakeStarts[stake].endDay;
-		let tshares = stakeStarts[stake].stakeTShares;
-		tableHTML += "<tr><td>"+stakeindex+"</td><td>"+stakeid+"</td><td>"+endday+"</td><td>"+tshares+"</td>";
-		if(stakeEnds.some(s=>s.stakeId === stakeid)){
+		let tshares = stakeStarts[stake].stakeTShares;		
+		let penalty_perc = latePenalty(endday,today);
+		penalty_perc_display = penalty_perc.toFixed(2)+"%";
+		
+		let ended = stakeEnds.some(s=>s.stakeId === stakeid);
+		if(ended){
+			penalty_perc_display = "n.a.";
+		}
+		
+		tableHTML += "<tr><td>"+stakeindex+"</td><td>"+stakeid+"</td><td>"+endday+"</td><td>"+tshares+"</td><td>"+penalty_perc_display+"</td>";
+		if(ended){
 			tableHTML += "<td>Ended</td>";
-		}else{
+		}else if(penalty_perc == 100){
+			tableHTML += "<td>Expired</td>";
+		}else if(endday <= today){
 			tableHTML += "<td><button onclick='unstake("+stakeindex+","+stakeid+")'>Unstake</button></td>";
+		}else{
+		tableHTML += "<td><button style='color:orange' onclick='unstake("+stakeindex+","+stakeid+")'>E-Unstake</button></td>";
 		}
 		tableHTML += "</tr>";
 	}
@@ -68,11 +96,9 @@ loadStakesListButton.addEventListener('click', () => {
 async function unstake(index,id) {
 
 	if(chain_selected !== '1'){ return alert("Only Hex on Eth supported");}
-  //initialize contract
-  const myContract = new web3.eth.Contract(ethhexabi, hexContractId);
 
   //send transaction to the network
-  const txReceipt = await myContract.methods
+  const txReceipt = await hexContract.methods
     .stakeEnd(index,id) //name of the function you are calling in the contract
     .send({ from: account })
 	.catch((err) => {
@@ -87,16 +113,33 @@ async function unstake(index,id) {
   }
 }
 
+async function getCurrentDay() {
 
+	const functionSelector = hexContract.methods.currentDay().encodeABI();
+	// Make the eth_call
+	const result = await web3.eth.call({
+	  to: hexContractId,
+	  data: functionSelector,
+	})
+	
+
+	if(typeof result !== 'undefined'){
+		//show tx hash
+		return messages.innerHTML = web3.utils.hexToNumberString(result);
+	}else{
+		return false;
+	}  
+}
+
+/* Account and connection stuff */
 const ethereumButton = document.querySelector('.enableEthereumButton');
-
 const showAccount = document.querySelector('.showAccount');
 const showChainId = document.querySelector('.showChainId');
-const showPermissions = document.querySelector('.showPermissions');
+
 
 var web3;
 var account='';
-
+var hexContract;
 ethereumButton.addEventListener('click', () => {	
 	setChainId();
 	requestAccounts();
@@ -110,6 +153,8 @@ window.addEventListener('load', function () {
 		web3 = new Web3(window.ethereum);
 		setChainId();		
 		registerHandlers();
+		//initialize contract
+		hexContract = new web3.eth.Contract(ethhexabi, hexContractId);
 		//requestAccounts();		
 	} else {
 		// if window.ethereum is not available, give instructions to install MetaMask
@@ -162,21 +207,19 @@ async function setChainId(){
 	displayChainInfo(chainId);	
 }
 function handleConnectButton(text=""){
-	console.log("handling button");
-	if(window.ethereum.isConnected() && text == ""){ //&& window.ethereum._metamask.isUnlocked()
-		ethereumButton.innerHTML = "Connected";	
-	}else if(text == ""){
-		ethereumButton.innerHTML = "Connect";	
-	}else{
+	//console.log("handling button");
+	if(text != ""){ 
 		ethereumButton.innerHTML = text;	
+	}else if(window.ethereum.isConnected()){//&& window.ethereum._metamask.isUnlocked()
+		ethereumButton.innerHTML = "Connected";	
+	}else{
+		ethereumButton.innerHTML = "Connect";	
 	}
 }
 function registerHandlers(){
 	window.ethereum.on('chainChanged', displayChainInfo);
-
-	window.ethereum.on("accountsChanged", getAccount)
-
-	window.ethereum.on("disconnect", handleConnectButton)
+	window.ethereum.on("accountsChanged", getAccount);
+	window.ethereum.on("disconnect", handleConnectButton);
 }
 function makeQuery(){
 return `{
