@@ -67,7 +67,7 @@ loadStakesListButton.addEventListener('click', () => {
 
 async function unstake(index,id) {
 
-	if(chain_selected !== 1){ return alert("Only Hex on Eth supported");}
+	if(chain_selected !== '1'){ return alert("Only Hex on Eth supported");}
   //initialize contract
   const myContract = new web3.eth.Contract(ethhexabi, hexContractId);
 
