@@ -6,4 +6,4 @@ This has to be hosted/served somewhere at localhost or on a website, etc. Runnin
 1. Connect metamask wallet using ethereum 
 2. Copy the graphql query and run it at the link provided
 3. Copy the hex staking list results and paste them into the 2nd text box and click load stakes.
-4. Ensure that the stake is ready to be ended before unstaking! More features may be added soon to allieviate this potential issue.
+4. Use precaution :D
