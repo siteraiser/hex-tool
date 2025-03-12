@@ -149,7 +149,7 @@ async function getAccount() {
 
 var chain_selected = 0;
 function displayChainInfo(chainId){
-	let chain_selected = web3.utils.hexToNumberString(chainId);
+	chain_selected = web3.utils.hexToNumberString(chainId);
 	let chains = [];
 	chains[369] = 'pls';
 	chains[943] = 'plsV4testnet';
