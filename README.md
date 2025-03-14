@@ -1,7 +1,7 @@
 # hex-tool
 Unstake Hex on Ethereum tool
 Mostly for learning purposes for now (while the hex subgraph is available at the link provided).
-This has to be hosted/served somewhere at localhost or on a website, etc. Running from an html file doesn't work.
+You can run the exe or the index.html file alone can be hosted/served somewhere at localhost or on a website, etc. Running it from an html file doesn't work.
 
 1. Connect metamask wallet using ethereum 
 2. Copy the graphql query and run it at the link provided
