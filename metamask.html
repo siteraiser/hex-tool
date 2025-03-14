@@ -14,7 +14,6 @@
 
 <div class="showAccount"></div>
 <div class="showChainId"></div>
-<div class="showPermissions"></div>
 
 <label for="stakes_data">HEX Stakes GraphQL Query </label>
 <br>
@@ -97,8 +96,8 @@ async function unstake(index,id) {
 
 	if(chain_selected !== '1'){ return alert("Only Hex on Eth supported");}
 
-  //send transaction to the network
-  const txReceipt = await hexContract.methods
+	//send transaction to the network
+	const txReceipt = await hexContract.methods
     .stakeEnd(index,id) //name of the function you are calling in the contract
     .send({ from: account })
 	.catch((err) => {
@@ -108,9 +107,9 @@ async function unstake(index,id) {
 	});
 
 	if(typeof txReceipt.transactionHash !== 'undefined'){
-	  //show tx hash
-	 messages.innerHTML = txReceipt.transactionHash;
-  }
+		//show tx hash
+		messages.innerHTML = txReceipt.transactionHash;
+	}
 }
 
 async function getCurrentDay() {
@@ -118,10 +117,9 @@ async function getCurrentDay() {
 	const functionSelector = hexContract.methods.currentDay().encodeABI();
 	// Make the eth_call
 	const result = await web3.eth.call({
-	  to: hexContractId,
-	  data: functionSelector,
-	})
-	
+		to: hexContractId,
+		data: functionSelector,
+	});	
 
 	if(typeof result !== 'undefined'){
 		//show tx hash
@@ -140,11 +138,6 @@ const showChainId = document.querySelector('.showChainId');
 var web3;
 var account='';
 var hexContract;
-ethereumButton.addEventListener('click', () => {	
-	setChainId();
-	requestAccounts();
-	getAccount();
-});	
 
 window.addEventListener('load', function () {
 	// check if web3 is available
@@ -155,7 +148,7 @@ window.addEventListener('load', function () {
 		registerHandlers();
 		//initialize contract
 		hexContract = new web3.eth.Contract(ethhexabi, hexContractId);
-		//requestAccounts();		
+		//connectToMetaMask();	//connect on load
 	} else {
 		// if window.ethereum is not available, give instructions to install MetaMask
 		messages.innerHTML =
@@ -163,19 +156,34 @@ window.addEventListener('load', function () {
 	}
 });
 
+ethereumButton.addEventListener('click', async () => {	
+	setChainId();
+	connectToMetaMask();
+});	
+
+async function connectToMetaMask(){
+	handleConnectButton("Waiting");
+	let error = await requestAccounts();
+	if(error === ''){
+		messages.innerHTML = "";
+		getAccount();			
+	}else{
+		if (error.code === 4001) {	
+			handleConnectButton("Connect");		
+			messages.innerHTML = "Please connect to MetaMask.";
+		}else if(error.code === -32002){
+			messages.innerHTML = "Waiting for sign-in.";
+		}		
+	}
+}
 
 async function requestAccounts() {
-	
+	let error ='';
 	await window.ethereum.request({ method: 'eth_requestAccounts' })  //const accounts =
-	.catch((err) => {
-		if (err.code === 4001) {
-			handleConnectButton("Waiting");
-			messages.innerHTML = "Please connect to MetaMask.";
-		} else {
-			handleConnectButton("Waiting");
-			console.error(err);
-		}
-    });
+	.catch((err) => {		
+		error = err;
+    });	
+	return error;
 }
 
 async function getAccount() {
@@ -206,6 +214,7 @@ async function setChainId(){
 	var chainId = await window.ethereum.request({ method: 'eth_chainId' });
 	displayChainInfo(chainId);	
 }
+
 function handleConnectButton(text=""){
 	//console.log("handling button");
 	if(text != ""){ 
@@ -216,11 +225,13 @@ function handleConnectButton(text=""){
 		ethereumButton.innerHTML = "Connect";	
 	}
 }
+
 function registerHandlers(){
 	window.ethereum.on('chainChanged', displayChainInfo);
 	window.ethereum.on("accountsChanged", getAccount);
 	window.ethereum.on("disconnect", handleConnectButton);
 }
+
 function makeQuery(){
 return `{
   transfersIn: transfers(
