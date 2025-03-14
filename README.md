@@ -1,5 +1,5 @@
 # hex-tool
-Unstake Hex on Ethereum tool
+Unstake Hex on Ethereum tool.
 Mostly for learning purposes for now (while the hex subgraph is available at the link provided).
 You can run the exe or the index.html file alone can be hosted/served somewhere at localhost or on a website, etc. Opening the html file from the fielsysem doesn't work.
 
